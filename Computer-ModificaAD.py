@@ -14,16 +14,19 @@ config_file = st.file_uploader(
     type=["xlsx", "xls"],
     help="File con colonne: UserPrincipalName, Name, Mobile"
 )
+# Input: nome del computer
+computer = st.text_input("Computer (nome del computer)", "").strip()
 
+# Verifica input
 if not utenza or not config_file:
-    st.warning("Per favore inserisci l'utenza e carica il file Est_Dati per procedere.")
+    st.warning("Per favore inserisci l'utenza, carica il file Est_Dati e indica il nome del computer per procedere.")
     st.stop()
 
-# Lettura dati Excel
+# Lettura dati Excel con engine esplicito
 try:
-    df = pd.read_excel(io.BytesIO(config_file.read()))
+    df = pd.read_excel(io.BytesIO(config_file.read()), engine='openpyxl')
 except Exception as e:
-    st.error(f"Errore nel caricamento del file: {e}")
+    st.error(f"Errore nel caricamento del file: {e}. Assicurati di avere installato openpyxl.")
     st.stop()
 
 # Verifica presenza colonne
@@ -38,9 +41,6 @@ if row.empty:
     st.error(f"Utenza '{utenza}' non trovata in Est_Dati.")
     st.stop()
 record = row.iloc[0]
-
-# Input: nome del computer
-computer = st.text_input("Computer (nome del computer)", "").strip()
 
 # Generazione CSV
 if st.button("Genera CSV Computer"):
