@@ -8,11 +8,11 @@ st.set_page_config(page_title="Genera CSV Computer")
 st.title("Genera CSV Computer")
 
 # Input: indicare utenza e caricare dati
-utenza = st.text_input("Indicare Utenza (es. nome.cognome)").strip().lower()
+utenza = st.text_input("Indicare Utenza (SamAccountName es. nome.cognome)").strip().lower()
 config_file = st.file_uploader(
     "Caricare file Est_Dati (Excel)",
     type=["xlsx", "xls"],
-    help="File con colonne: UserPrincipalName, Name, Mobile"
+    help="File con colonne: SamAccountName, UserPrincipalName, Name, Mobile"
 )
 # Input: nome del computer
 computer = st.text_input("Computer (nome del computer)", "").strip()
@@ -30,15 +30,15 @@ except Exception as e:
     st.stop()
 
 # Verifica presenza colonne
-required_cols = ["UserPrincipalName", "Name", "Mobile"]
+required_cols = ["SamAccountName", "UserPrincipalName", "Name", "Mobile"]
 if not all(col in df.columns for col in required_cols):
     st.error(f"Il file deve contenere le colonne: {', '.join(required_cols)}.")
     st.stop()
 
-# Ricerca record per utenza
-row = df[df["UserPrincipalName"].str.lower() == utenza]
+# Ricerca record per SamAccountName
+row = df[df["SamAccountName"].str.lower().str.strip() == utenza]
 if row.empty:
-    st.error(f"Utenza '{utenza}' non trovata in Est_Dati.")
+    st.error(f"Utenza '{utenza}' non trovata in Est_Dati (SamAccountName).")
     st.stop()
 record = row.iloc[0]
 
