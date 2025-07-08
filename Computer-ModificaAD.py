@@ -17,20 +17,14 @@ config_file = st.file_uploader(
 
 # Input: nome del computer (per CSV Computer)
 computer = st.text_input("Computer (nome del computer)").strip()
-# Input: dati utente (per CSV Utente)
-sam_account_user = st.text_input("sAMAccountName Utente").strip()
-# Description per CSV Utente viene preso dal campo computer
 
-# Validazione upload
-def validate_inputs(require_user=False):
+# Funzioni di validazione
+def validate_inputs():
     if not utenza or not config_file:
         st.warning("Per favore inserisci l'utenza e carica il file Est_Dati per procedere.")
         return False
     if not computer:
         st.warning("Per favore indica il nome del computer.")
-        return False
-    if require_user and not sam_account_user:
-        st.warning("Per favore indica lo sAMAccountName per il CSV Utente.")
         return False
     return True
 
@@ -43,9 +37,8 @@ def load_df():
         return None
     return df
 
-# Controllo colonne
+# Filtra record per utenza
 required_cols = ["SamAccountName", "UserPrincipalName", "Name", "Mobile"]
-
 def filter_record(df):
     if not all(col in df.columns for col in required_cols):
         st.error(f"Il file deve contenere le colonne: {', '.join(required_cols)}.")
@@ -63,19 +56,16 @@ if config_file and utenza:
 else:
     record = None
 
-# Sezione CSV Computer
+# Tab per CSV
 tab1, tab2 = st.tabs(["CSV Computer", "CSV Utente"])
 
 with tab1:
     if st.button("Genera CSV Computer"):
-        if not validate_inputs():
-            st.stop()
-        if record is None:
+        if not validate_inputs() or record is None:
             st.stop()
         mail = record["UserPrincipalName"]
         cn = record["Name"]
         mobile = record["Mobile"]
-        # Costruisci CSV Computer
         header_comp = ["Computer","OU","add_mail","remove_mail","add_mobile","remove_mobile","add_userprincipalname","remove_userprincipalname","disable","moveToOU"]
         row_comp = [computer, "", mail, "", f"\"{mobile}\"", "", f"\"{cn}\"", "", "", ""]
         st.subheader("Anteprima CSV Computer")
@@ -90,12 +80,39 @@ with tab1:
 
 with tab2:
     if st.button("Genera CSV Utente"):
-        if not validate_inputs(require_user=True):
+        if not validate_inputs() or record is None:
             st.stop()
-        # Costruisci CSV Utente
+        # Costruisci CSV Utente usando 'utenza' per sAMAccountName
         header_user = ['sAMAccountName','Creation','OU','Name','DisplayName','cn','GivenName','Surname','employeeNumber','employeeID','department','Description','passwordNeverExpired','ExpireDate','userprincipalname','mail','mobile','RimozioneGruppo','InserimentoGruppo','disable','moveToOU','telephoneNumber','company']
+        mail = record["UserPrincipalName"]
+        name = record["Name"]
+        mobile_val = record["Mobile"]
         desc = computer
-        row_user = [sam_account_user,'SI','','','','','','','',sam_account_user,'','',desc,'','',sam_account_user+'@consip.it',sam_account_user+'@consip.it','','','',sam_account_user+'@consip.it','','','']
+        row_user = [
+            utenza,          # sAMAccountName
+            'SI',            # Creation
+            '',              # OU
+            name,            # Name
+            name,            # DisplayName
+            name,            # cn
+            '',              # GivenName
+            '',              # Surname
+            '',              # employeeNumber
+            '',              # employeeID
+            '',              # department
+            desc,            # Description
+            '',              # passwordNeverExpired
+            '',              # ExpireDate
+            mail,            # userprincipalname
+            mail,            # mail
+            f"\"{mobile_val}\"", # mobile
+            '',              # RimozioneGruppo
+            '',              # InserimentoGruppo
+            '',              # disable
+            '',              # moveToOU
+            '',              # telephoneNumber
+            ''               # company
+        ]
         st.subheader("Anteprima CSV Utente")
         st.dataframe(pd.DataFrame([row_user], columns=header_user))
         buf2 = io.StringIO()
@@ -103,5 +120,5 @@ with tab2:
         writer2.writerow(header_user)
         writer2.writerow(row_user)
         buf2.seek(0)
-        st.download_button("📥 Scarica CSV Utente", buf2.getvalue(), file_name=f"{sam_account_user}_utente.csv", mime="text/csv")
+        st.download_button("📥 Scarica CSV Utente", buf2.getvalue(), file_name=f"{utenza}_utente.csv", mime="text/csv")
         st.success("✅ File CSV Utente generato")
