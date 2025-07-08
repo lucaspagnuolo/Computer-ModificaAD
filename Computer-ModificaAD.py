@@ -3,47 +3,49 @@ import csv
 import pandas as pd
 import io
 
-# Funzioni utili
-
-def genera_samaccountname(nome, cognome, secondo_nome="", secondo_cognome="", esterno=False) -> str:
-    n, sn = nome.strip().lower(), secondo_nome.strip().lower()
-    c, sc = cognome.strip().lower(), secondo_cognome.strip().lower()
-    suffix = ".ext" if esterno else ""
-    limit = 16 if esterno else 20
-    cand1 = f"{n}{sn}.{c}{sc}"
-    if len(cand1) <= limit:
-        return cand1 + suffix
-    cand2 = f"{n[:1]}{sn[:1]}.{c}{sc}"
-    if len(cand2) <= limit:
-        return cand2 + suffix
-    base = f"{n[:1]}{sn[:1]}.{c}"
-    return base[:limit] + suffix
-
-
-def build_full_name(cognome, secondo_cognome, nome, secondo_nome, esterno=False) -> str:
-    parts = [p for p in [cognome, secondo_cognome, nome, secondo_nome] if p]
-    full = " ".join(parts)
-    return full + (" (esterno)" if esterno else "")
-
 # Configurazione pagina
 st.set_page_config(page_title="Genera CSV Computer")
 st.title("Genera CSV Computer")
 
-# Input necessari
-cognome = st.text_input("Cognome").strip().capitalize()
-nome = st.text_input("Nome").strip().capitalize()
-secondo_cognome = st.text_input("Secondo Cognome").strip().capitalize()
-secondo_nome = st.text_input("Secondo Nome").strip().capitalize()
-numero_telefono = st.text_input("Mobile (+39 già inserito)", "").replace(" ", "")
+# Input: indicare utenza e caricare dati
+utenza = st.text_input("Indicare Utenza (es. nome.cognome)").strip().lower()
+config_file = st.file_uploader(
+    "Caricare file Est_Dati (Excel)",
+    type=["xlsx", "xls"],
+    help="File con colonne: UserPrincipalName, Name, Mobile"
+)
+
+if not utenza or not config_file:
+    st.warning("Per favore inserisci l'utenza e carica il file Est_Dati per procedere.")
+    st.stop()
+
+# Lettura dati Excel
+try:
+    df = pd.read_excel(io.BytesIO(config_file.read()))
+except Exception as e:
+    st.error(f"Errore nel caricamento del file: {e}")
+    st.stop()
+
+# Verifica presenza utenza
+if "UserPrincipalName" not in df.columns or "Name" not in df.columns or "Mobile" not in df.columns:
+    st.error("Il file deve contenere le colonne: UserPrincipalName, Name, Mobile.")
+    st.stop()
+
+row = df[df["UserPrincipalName"].str.lower() == utenza]
+if row.empty:
+    st.error(f"Utenza '{utenza}' non trovata in Est_Dati.")
+    st.stop()
+record = row.iloc[0]
+
+# Input PC
 description = st.text_input("PC (nome del computer)", "").strip()
 
 # Generazione CSV
 if st.button("Genera CSV Computer"):
-    # Costruisci SAM e CN
-    sAM = genera_samaccountname(nome, cognome, secondo_nome, secondo_cognome, False)
-    cn = build_full_name(cognome, secondo_cognome, nome, secondo_nome, False)
-    mobile = f"+39 {numero_telefono}" if numero_telefono else ""
-    comp = description
+    mail = record["UserPrincipalName"]
+    cn = record["Name"]
+    mobile = record["Mobile"]
+    comp = description or ""
 
     # Definisci header e riga
     comp_header = [
@@ -55,7 +57,7 @@ if st.button("Genera CSV Computer"):
     comp_row = [
         comp,
         "",  # OU
-        f"{sAM}@consip.it",
+        mail,
         "",  # remove_mail
         f"\"{mobile}\"",  # add_mobile
         "",  # remove_mobile
@@ -80,7 +82,7 @@ if st.button("Genera CSV Computer"):
     st.download_button(
         label="📥 Scarica CSV Computer",
         data=buf.getvalue(),
-        file_name=f"{cognome}_{nome[:1]}_computer.csv",
+        file_name=f"{utenza}_computer.csv",
         mime="text/csv"
     )
     st.success("✅ File CSV Computer generato correttamente")
