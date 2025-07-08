@@ -84,17 +84,14 @@ with tab2:
             st.stop()
         # Costruisci CSV Utente usando 'utenza' per sAMAccountName
         header_user = ['sAMAccountName','Creation','OU','Name','DisplayName','cn','GivenName','Surname','employeeNumber','employeeID','department','Description','passwordNeverExpired','ExpireDate','userprincipalname','mail','mobile','RimozioneGruppo','InserimentoGruppo','disable','moveToOU','telephoneNumber','company']
-        mail = record["UserPrincipalName"]
-        name = record["Name"]
-        mobile_val = record["Mobile"]
         desc = computer
         row_user = [
             utenza,          # sAMAccountName
-            'SI',            # Creation
+            '',              # Creation
             '',              # OU
-            name,            # Name
-            name,            # DisplayName
-            name,            # cn
+            '',              # Name
+            '',              # DisplayName
+            '',              # cn
             '',              # GivenName
             '',              # Surname
             '',              # employeeNumber
@@ -103,9 +100,9 @@ with tab2:
             desc,            # Description
             '',              # passwordNeverExpired
             '',              # ExpireDate
-            mail,            # userprincipalname
-            mail,            # mail
-            f"\"{mobile_val}\"", # mobile
+            '',              # userprincipalname
+            '',              # mail
+            '',              # mobile
             '',              # RimozioneGruppo
             '',              # InserimentoGruppo
             '',              # disable
