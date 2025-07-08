@@ -26,26 +26,27 @@ except Exception as e:
     st.error(f"Errore nel caricamento del file: {e}")
     st.stop()
 
-# Verifica presenza utenza
-if "UserPrincipalName" not in df.columns or "Name" not in df.columns or "Mobile" not in df.columns:
-    st.error("Il file deve contenere le colonne: UserPrincipalName, Name, Mobile.")
+# Verifica presenza colonne
+required_cols = ["UserPrincipalName", "Name", "Mobile"]
+if not all(col in df.columns for col in required_cols):
+    st.error(f"Il file deve contenere le colonne: {', '.join(required_cols)}.")
     st.stop()
 
+# Ricerca record per utenza
 row = df[df["UserPrincipalName"].str.lower() == utenza]
 if row.empty:
     st.error(f"Utenza '{utenza}' non trovata in Est_Dati.")
     st.stop()
 record = row.iloc[0]
 
-# Input PC
-description = st.text_input("PC (nome del computer)", "").strip()
+# Input: nome del computer
+computer = st.text_input("Computer (nome del computer)", "").strip()
 
 # Generazione CSV
 if st.button("Genera CSV Computer"):
     mail = record["UserPrincipalName"]
     cn = record["Name"]
     mobile = record["Mobile"]
-    comp = description or ""
 
     # Definisci header e riga
     comp_header = [
@@ -55,7 +56,7 @@ if st.button("Genera CSV Computer"):
         "disable", "moveToOU"
     ]
     comp_row = [
-        comp,
+        computer,
         "",  # OU
         mail,
         "",  # remove_mail
